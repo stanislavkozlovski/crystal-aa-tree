@@ -1,7 +1,14 @@
-class AANode 
-    property :value, :parent, :left, :right, :level
+class Object
+    # Hack to preserve the .as() calls
+    def as(_)
+        self
+    end
+end
 
-    def initialize(value : Int32, level : Int32, left : (AANode | Nil)=nil, right : (AANode | Nil)=nil, parent : (AANode | Nil)=nil)
+class AANode
+    attr_accessor :value, :parent, :left, :right, :level
+
+    def initialize(value:, level:, left: nil, right: nil, parent: nil)
         @value = value
         @level = level
         @parent = parent
@@ -11,7 +18,7 @@ class AANode
 end
 
 class AATree
-    def initialize(root : AANode)
+    def initialize(root)
         @root = root
         @count = 1
     end
@@ -21,7 +28,7 @@ class AANode
     #
     # Returns the grandparent of the node
     #
-    def grandparent : (AANode | Nil)
+    def grandparent
         if @parent.nil?
             nil
         else
@@ -39,18 +46,18 @@ class AANode
     #  In the above example, 3 is a right grandchild of 1.
     #  6 is not a right grandchild of 5
     #
-    def is_right_grandchild?(grandparent : AANode)
+    def is_right_grandchild?(grandparent)
         (!grandparent.right.nil?) && (!grandparent.right.as(AANode).right.nil?) && grandparent.right.as(AANode).right == self
     end
 end
 
 class AATree
-    def initialize(root : AANode)
+    def initialize(root)
         @root = root
         @count = 1
     end
 
-    def contains?(value : Int32) : Bool
+    def contains?(value)
         if @root.nil?
             raise Exception.new("Tree is empty!")
         else
@@ -58,7 +65,7 @@ class AATree
         end
     end
 
-    protected def _contains?(value : Int32, node : AANode) : Bool
+    protected def _contains?(value, node)
         if node.value > value
             if node.left.nil?
                 false
@@ -79,7 +86,7 @@ class AATree
     #
     # Adds a value into the tree
     #
-    def add(value : Int32)
+    def add(value)
         if @root.nil?
             @root = AANode.new(value: value, level: 1)
         else
@@ -91,7 +98,7 @@ class AATree
     #
     # Removes a value from the tree
     #
-    def remove(value : Int32)
+    def remove(value)
         if @root.nil?
             raise Exception.new("There is nothing to remove!")
         elsif @count == 1
@@ -107,7 +114,7 @@ class AATree
     #
     # Removes a value from the tree
     #
-    protected def _remove(value : Int32, node : (AANode | Nil))
+    protected def _remove(value, node)
         if node.nil?
             raise Exception.new("Value #{value} is not in the tree!")
         end
@@ -165,10 +172,10 @@ class AATree
         # The node is removed, now fix the levels
 
         # left node should be exactly one level less
-        left_level_is_wrong : Bool = (!node.left.nil? && node.left.as(AANode).level < node.level - 1) || (node.left.nil? && node.level > 1)  # if we don't have a left node, our level should be 1
+        left_level_is_wrong = (!node.left.nil? && node.left.as(AANode).level < node.level - 1) || (node.left.nil? && node.level > 1)  # if we don't have a left node, our level should be 1
 
         # right node should be exactly one less or equal
-        right_level_is_wrong : Bool = (!node.right.nil? && node.right.as(AANode).level < node.level - 1) || (node.right.nil? && node.level > 1)  # if we don't have a right node, our level should be 1
+        right_level_is_wrong = (!node.right.nil? && node.right.as(AANode).level < node.level - 1) || (node.right.nil? && node.level > 1)  # if we don't have a right node, our level should be 1
 
         # If there is no break in the levels there is no need  to do rebalance operations
         return unless (left_level_is_wrong || right_level_is_wrong)
@@ -217,7 +224,7 @@ class AATree
     # left/right of which the new node should be inserted.
     # Backtracing from the recursion, we check if we should perform a split or skew operation*/
     #
-    protected def _add(value : Int32, node : AANode)
+    protected def _add(value, node)
         if value < node.value
             # go left
             if node.left.nil?
@@ -259,7 +266,7 @@ class AATree
     #      i.e if 12 had a left child 11.5, 11.5 should become the right child of the new 11
     #
     
-    def split(grandparent : AANode, parent : AANode)
+    def split(grandparent, parent)
         # fixes grandparent's link
         grand_grandparent = grandparent.parent
         unless grand_grandparent.nil?
@@ -287,7 +294,7 @@ class AATree
 
     # Given a node, check if a Split operation should be performed, by checking the node's grandparent level
 	# The node we're given would be the downmost one in the split operation */
-    def check_split(node : AANode)
+    def check_split(node)
         grandparent = node.grandparent
         if (!grandparent.nil?) && node.is_right_grandchild?(grandparent) && grandparent.level <= node.level
             split(grandparent, node.parent.as(AANode))
@@ -300,7 +307,7 @@ class AATree
     #     /          ===>          \
     #   11(B) 1                   12(A)1
     #
-    def skew(parent : AANode, leaf : AANode)
+    def skew(parent, leaf)
         grandparent = parent.parent
         unless grandparent.nil?
             if grandparent.value < parent.value
@@ -329,7 +336,7 @@ class AATree
     #         We generally don't want to do that in deletions, as in the example on the TestFunctionalTestTreeRemoval function
     #         where we remove 1 from the tree
     #
-    def check_skew(node : AANode, check_for_split : Bool)
+    def check_skew(node, check_for_split)
         parent = node.parent
         if (!parent.nil?) && parent.left == node && parent.level <= node.level
             skew(parent, node)
